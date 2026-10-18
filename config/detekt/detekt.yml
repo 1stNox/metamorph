@@ -1,0 +1,53 @@
+# detekt config, layered on top of detekt's defaults (buildUponDefaultConfig = true).
+#
+# Ownership split with ktlint:
+#   - ktlint owns formatting; its style lives in the root .editorconfig.
+#   - detekt owns code quality, including naming. ktlint's naming rules are disabled in .editorconfig.
+# Every detekt rule that duplicates a ktlint rule is switched off here, so no problem is reported twice
+# and ktlint's output can never trip detekt.
+
+style:
+  # Active by default in detekt, duplicated by ktlint.
+  MaxLineLength:
+    active: false # ktlint: max-line-length (limit comes from .editorconfig)
+  ModifierOrder:
+    active: false # ktlint: modifier-order
+  NewLineAtEndOfFile:
+    active: false # ktlint: final-newline
+  WildcardImport:
+    active: false # ktlint: no-wildcard-imports
+
+  # Off by default in detekt. Pinned off so a change of detekt's defaults cannot reintroduce overlap.
+  BracesOnIfStatements:
+    active: false # ktlint: if-else-bracing, multi-line-if-else
+  CascadingCallWrapping:
+    active: false # ktlint: chain-method-continuation
+  ExpressionBodySyntax:
+    active: false # ktlint: function-expression-body
+  MandatoryBracesLoops:
+    active: false # ktlint: multiline-loop
+  MultilineRawStringIndentation:
+    active: false # ktlint: string-template-indent
+  NoTabs:
+    active: false # ktlint: indent
+  OptionalUnit:
+    active: false # ktlint: no-unit-return
+  SpacingAfterPackageAndImports:
+    active: false # ktlint: no-consecutive-blank-lines
+  TrailingWhitespace:
+    active: false # ktlint: no-trailing-spaces
+  TrimMultilineRawString:
+    active: false # ktlint: string-template-indent
+  UnnecessaryBracesAroundTrailingLambda:
+    active: false # ktlint: unnecessary-parentheses-before-trailing-lambda
+
+  # Owned by detekt: ktlint's no-unused-imports is deprecated and opt-in (kept disabled in .editorconfig),
+  # so without this nobody would check unused imports. Reports only, never rewrites imports.
+  UnusedImport:
+    active: true
+
+empty-blocks:
+  EmptyClassBlock:
+    active: false # ktlint: no-empty-class-body
+  EmptyKotlinFile:
+    active: false # ktlint: no-empty-file

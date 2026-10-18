@@ -6,11 +6,11 @@ The project has no static analysis or formatting enforcement, so style and code-
 
 - Add the detekt Gradle plugin (`dev.detekt`) for static analysis of Kotlin sources (main and test source sets).
 - Add the ktlint Gradle plugin (`org.jlleitschuh.gradle.ktlint`) for format checking and auto-formatting of Kotlin sources and `*.gradle.kts` scripts.
-- Make ktlint the single owner of formatting and detekt the owner of code-quality rules: a shared `.editorconfig` drives ktlint, and detekt rules that duplicate ktlint (line length, trailing whitespace, final newline, wildcard imports, unused imports, trailing commas, etc.) are disabled in the detekt config.
+- Make ktlint the single owner of formatting and detekt the owner of code-quality rules: a shared `.editorconfig` drives ktlint, and detekt rules that duplicate ktlint (line length, trailing whitespace, final newline, wildcard imports, modifier order, etc.) are disabled in the detekt config, while naming and unused imports belong to detekt and are disabled on the ktlint side.
 - Do not add detekt's ktlint wrapper rule set (`detekt-rules-ktlint-wrapper`), since it would run ktlint a second time under detekt.
 - Wire both tools into `./gradlew check` so violations fail the build; `./gradlew ktlintFormat` provides auto-fix.
 - Manage plugin versions through the existing version catalog (`gradle/libs.versions.toml`).
-- Fix or baseline any findings in the existing sample code (`App.kt`, `AppTest.kt`) so the build stays green.
+- Fix any findings in the existing sample code (`App.kt`, `AppTest.kt`) so the build stays green.
 
 ## Capabilities
 

@@ -1,0 +1,22 @@
+root = true
+
+[*.{kt,kts}]
+charset = utf-8
+indent_style = space
+indent_size = 4
+max_line_length = 120
+insert_final_newline = true
+trim_trailing_whitespace = true
+ktlint_code_style = ktlint_official
+
+# Unused imports are owned by detekt (UnusedImport). ktlint's rule is deprecated and can drop needed imports.
+ktlint_standard_no-unused-imports = disabled
+
+# Naming is owned by detekt (naming rule set). Disabled here so a naming problem is not reported twice.
+ktlint_standard_backing-property-naming = disabled
+ktlint_standard_class-naming = disabled
+ktlint_standard_enum-entry-name-case = disabled
+ktlint_standard_filename = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_package-name = disabled
+ktlint_standard_property-naming = disabled

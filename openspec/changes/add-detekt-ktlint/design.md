@@ -24,7 +24,7 @@ Registry check (2026-10-18): the stable detekt line (`io.gitlab.arturbosch.detek
 ## Decisions
 
 ### 1. Two standalone tools, split by responsibility; no detekt ktlint wrapper
-ktlint owns **formatting** (layout, whitespace, import ordering, trailing commas, modifier order, wildcard/unused imports, final newline, line length). detekt owns **code quality** (complexity, naming-by-semantics, potential bugs, performance, exceptions, coroutines, etc.). The detekt `dev.detekt:detekt-rules-ktlint-wrapper` artifact is deliberately *not* added.
+ktlint owns **formatting** (layout, whitespace, import ordering, wildcard imports, modifier order, final newline, line length). detekt owns **code quality** (complexity, naming, unused imports, potential bugs, performance, exceptions, coroutines, etc.). The detekt `dev.detekt:detekt-rules-ktlint-wrapper` artifact is deliberately *not* added.
 
 - *Why:* the user asked for both tools. The wrapper would run ktlint a second time inside detekt with a separately configured rule set, which is exactly the duplication to avoid. Standalone ktlint gets the maintained Gradle integration (`ktlintCheck`, `ktlintFormat`, script-file checks, up-to-date checking).
 - *Alternative considered:* detekt + ktlint wrapper only (single tool, single config file, `autoCorrect: true`). Simpler, and conflicts are impossible by construction, but there is no standalone ktlint, the wrapper's ktlint version lags the ktlint release, and the wrapper requires its own `ktlint:` config block. Kept as the fallback if the standalone setup proves noisy.
@@ -38,8 +38,9 @@ Both are declared in `gradle/libs.versions.toml` (`[versions]` + `[plugins]`) an
 
 ### 3. Ownership is enforced by configuration, not convention
 - **`.editorconfig` (repo root)** is the single source of truth for formatting: `ktlint_code_style = ktlint_official`, `indent_size = 4`, `max_line_length = 120`, `insert_final_newline = true`, `trim_trailing_whitespace = true`. ktlint reads it natively. IDEs pick it up too.
-- **`config/detekt/detekt.yml`** is loaded with `buildUponDefaultConfig = true`, so it only contains deviations from detekt's defaults. It disables every detekt rule that duplicates a ktlint rule. The candidate list is: `MaxLineLength`, `NewLineAtEndOfFile`, `WildcardImport`, `UnusedImport`, `ModifierOrder`, `NoTabs`, `SpacingBetweenPackageAndImports`, and any `style` rule found at implementation time that the ktlint `ktlint_official` rule set also covers. The exact IDs are confirmed against the config produced by `detektGenerateConfig` (rule IDs changed between 1.x and 2.0).
-- Rules where both tools have an opinion but about different aspects (e.g. detekt `FunctionNaming` for semantic naming vs ktlint `function-naming`) are left on in both only if their configurations agree; otherwise detekt's is disabled.
+- **`config/detekt/detekt.yml`** is loaded with `buildUponDefaultConfig = true`, so it only contains deviations from detekt's defaults. It disables every *formatting* rule that duplicates a ktlint rule: `MaxLineLength`, `NewLineAtEndOfFile`, `WildcardImport`, `ModifierOrder`, `EmptyClassBlock`, `EmptyKotlinFile`, plus rules that are off by default but pinned off (`TrailingWhitespace`, `NoTabs`, `OptionalUnit`, `SpacingAfterPackageAndImports`, and similar) so a change in detekt's defaults cannot reintroduce overlap. The IDs were confirmed against the config produced by `detektGenerateConfig` (rule IDs changed between 1.x and 2.0; detekt rejects unknown IDs, which guards against typos).
+- **Naming is owned by detekt.** ktlint's naming rules (`class-naming`, `function-naming`, `property-naming`, `backing-property-naming`, `package-name`, `enum-entry-name-case`, `filename`) are disabled in `.editorconfig`, because detekt's `naming` rule set covers the same ground with more configuration.
+- **Unused imports are owned by detekt.** ktlint's `no-unused-imports` is deprecated in 1.8.0 (marked for removal in 2.0 because it can drop imports that are needed) and only runs when explicitly enabled, so it is pinned disabled in `.editorconfig` and detekt's `UnusedImport` is enabled. It only reports and never rewrites imports.
 
 ### 4. Prove non-interference with a round-trip check
 The acceptance criterion for "not violating each other's rules" is a round trip: after `ktlintFormat`, `ktlintCheck` and `detekt` must both pass on the same sources. During implementation this is verified once by deliberately mis-formatting a scratch Kotlin file, formatting it, and running both tools. No permanent test is added; the check is run manually and recorded in the task list.
@@ -56,7 +57,7 @@ The only Kotlin files are `App.kt` and `AppTest.kt` (Gradle `init` sample code).
 ## Risks / Trade-offs
 
 - **[detekt 2.0 is an alpha]** → Breaking changes between alphas are possible. Pin the exact version in the catalog; fall back to 1.23.8 with ktlint unchanged if it fails to run on Kotlin 2.4.10.
-- **[ktlint 1.8.0 may not parse the newest Kotlin 2.4 syntax]** → Only matters if source uses brand-new syntax. Pin explicitly so an upgrade is a deliberate catalog edit.
+- **[ktlint 1.8.0 may not parse the newest Kotlin 2.4 syntax]** → It embeds Kotlin compiler 2.2.21, older than the project's 2.4.10. This only matters if source uses brand-new syntax. Pin explicitly so an upgrade is a deliberate catalog edit.
 - **[A duplicated rule is missed in the detekt disable-list]** → Mitigated by the round-trip check in Decision 4 and by generating the full default config and reviewing it against the ktlint rule list during implementation.
 - **[Config drift: someone edits `.editorconfig` line length but detekt keeps its own]** → The detekt line-length rule is disabled outright, so `.editorconfig` is the only place the limit exists.
 - **[`check` gets slower]** → Accepted. Type-resolved detekt and ktlint both use Gradle up-to-date checks and the configuration cache, so unchanged sources are skipped.

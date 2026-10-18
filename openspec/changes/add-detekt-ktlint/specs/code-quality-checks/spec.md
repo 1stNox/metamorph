@@ -48,9 +48,13 @@ The two tools SHALL be configured so that no violation is reported by both tools
 - **WHEN** mis-formatted Kotlin code is processed by `./gradlew ktlintFormat`
 - **THEN** both `./gradlew ktlintCheck` and `./gradlew detekt` pass for the formatting-related aspects of that code
 
-#### Scenario: no duplicate reports
-- **WHEN** a file has a formatting problem such as a missing final newline, an unused import or a wildcard import
+#### Scenario: formatting problems are reported by ktlint only
+- **WHEN** a file has a formatting problem such as a missing final newline, a wildcard import, a wrong modifier order or an over-long line
 - **THEN** the problem is reported by ktlint only and not by detekt
+
+#### Scenario: naming and unused imports are reported by detekt only
+- **WHEN** a file has an unused import or a naming problem
+- **THEN** the problem is reported by detekt only and not by ktlint
 
 ### Requirement: Tool versions are managed in the version catalog
 The detekt plugin version, the ktlint Gradle plugin version, and the ktlint engine version SHALL be declared in `gradle/libs.versions.toml` and consumed by alias.

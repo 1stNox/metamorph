@@ -11,6 +11,9 @@ plugins {
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
+
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 repositories {
@@ -43,4 +46,22 @@ application {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+ktlint {
+    version = libs.versions.ktlint.asProvider()
+
+    filter {
+        exclude { it.file.path.contains("/build/") }
+    }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    parallel = true
+}
+
+tasks.named("check") {
+    dependsOn("detektMain", "detektTest")
 }
