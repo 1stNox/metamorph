@@ -1,11 +1,11 @@
 package dev.reichling.core.model
 
-import java.time.Instant
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.time.Instant
 
 class StreamRecordTest {
     private val timestamp = Instant.parse("2026-10-18T10:00:00Z")
@@ -40,16 +40,18 @@ class StreamRecordTest {
 
     @Test
     fun `headers are compared by key and content, in order`() {
-        val headers = listOf(
-            StreamRecord.Header("trace", "a".toByteArray()),
-            StreamRecord.Header("tag", null),
-            StreamRecord.Header("trace", "b".toByteArray()),
-        )
-        val same = listOf(
-            StreamRecord.Header("trace", "a".toByteArray()),
-            StreamRecord.Header("tag", null),
-            StreamRecord.Header("trace", "b".toByteArray()),
-        )
+        val headers =
+            listOf(
+                StreamRecord.Header("trace", "a".toByteArray()),
+                StreamRecord.Header("tag", null),
+                StreamRecord.Header("trace", "b".toByteArray()),
+            )
+        val same =
+            listOf(
+                StreamRecord.Header("trace", "a".toByteArray()),
+                StreamRecord.Header("tag", null),
+                StreamRecord.Header("trace", "b".toByteArray()),
+            )
 
         assertEquals(record(headers = headers), record(headers = same))
         assertEquals(record(headers = headers).hashCode(), record(headers = same).hashCode())

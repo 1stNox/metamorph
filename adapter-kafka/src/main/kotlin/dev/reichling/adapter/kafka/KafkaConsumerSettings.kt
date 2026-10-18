@@ -1,11 +1,13 @@
 package dev.reichling.adapter.kafka
 
-import java.util.Properties
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
+import java.util.Properties
 
 /** Where a consumer group starts when it has no committed offset. */
-enum class AutoOffsetReset(internal val kafkaValue: String) {
+enum class AutoOffsetReset(
+    internal val kafkaValue: String,
+) {
     /** Start with the oldest available record. */
     EARLIEST("earliest"),
 
@@ -67,13 +69,14 @@ data class KafkaConsumerSettings(
     }
 
     internal companion object {
-        val ADAPTER_OWNED_KEYS: Set<String> = setOf(
-            ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-            ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-            ConsumerConfig.GROUP_ID_CONFIG,
-            ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
-        )
+        val ADAPTER_OWNED_KEYS: Set<String> =
+            setOf(
+                ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                ConsumerConfig.GROUP_ID_CONFIG,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
+            )
     }
 }

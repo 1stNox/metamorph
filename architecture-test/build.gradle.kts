@@ -12,10 +12,12 @@ tasks.named<Test>("test") {
     // Konsist reads the production sources of every module straight from disk, which Gradle cannot
     // see. Declare them as inputs, otherwise this task is UP-TO-DATE after a change that only
     // touches production code and a violation goes unnoticed. The pattern needs no per-module wiring.
-    inputs.files(
-        fileTree(rootDir) {
-            include("**/src/main/**/*.kt")
-            exclude("**/build/**", "**/.gradle/**", "**/.git/**", "**/.kotlin/**")
-        },
-    ).withPropertyName("productionSources").withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .files(
+            fileTree(rootDir) {
+                include("**/src/main/**/*.kt")
+                exclude("**/build/**", "**/.gradle/**", "**/.git/**", "**/.kotlin/**")
+            },
+        ).withPropertyName("productionSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
 }

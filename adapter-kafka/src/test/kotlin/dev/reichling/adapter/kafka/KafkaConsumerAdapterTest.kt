@@ -3,9 +3,6 @@ package dev.reichling.adapter.kafka
 import dev.reichling.core.model.RecordOrigin
 import dev.reichling.core.port.CommitRejectedException
 import dev.reichling.core.port.EventStreamException
-import java.time.Instant
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
@@ -17,6 +14,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class KafkaConsumerAdapterTest {
     private val orders0 = TopicPartition("orders", 0)
@@ -31,7 +31,13 @@ class KafkaConsumerAdapterTest {
         fun `origin, key, value and timestamp are mapped`() {
             fixture.subscribeAndAssign(setOf("orders"), orders1)
             fixture.addRecord(orders1, 0, key = "k".toByteArray(), value = "v".toByteArray())
-            fixture.addRecord(orders1, 1, key = "k".toByteArray(), value = "v".toByteArray(), timestamp = 1_700_000_000_456L)
+            fixture.addRecord(
+                orders1,
+                1,
+                key = "k".toByteArray(),
+                value = "v".toByteArray(),
+                timestamp = 1_700_000_000_456L,
+            )
 
             val records = adapter.poll(100.milliseconds)
 
@@ -63,12 +69,13 @@ class KafkaConsumerAdapterTest {
                 orders0,
                 0,
                 value = "v".toByteArray(),
-                headers = listOf(
-                    "trace" to "a".toByteArray(),
-                    "tag" to "x".toByteArray(),
-                    "trace" to "b".toByteArray(),
-                    "empty" to null,
-                ),
+                headers =
+                    listOf(
+                        "trace" to "a".toByteArray(),
+                        "tag" to "x".toByteArray(),
+                        "trace" to "b".toByteArray(),
+                        "empty" to null,
+                    ),
             )
 
             val headers = adapter.poll(100.milliseconds).single().headers
@@ -378,7 +385,13 @@ class KafkaConsumerAdapterTest {
         fun `close uses the configured timeout`() {
             adapter.close()
 
-            assertEquals(3.seconds.inWholeMilliseconds, fixture.mock.closeOptions!!.timeout().get().toMillis())
+            assertEquals(
+                3.seconds.inWholeMilliseconds,
+                fixture.mock.closeOptions!!
+                    .timeout()
+                    .get()
+                    .toMillis(),
+            )
         }
     }
 }

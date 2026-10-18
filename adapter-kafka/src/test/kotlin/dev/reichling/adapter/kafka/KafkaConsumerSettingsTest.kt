@@ -4,9 +4,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.junit.jupiter.api.assertThrows
 
 class KafkaConsumerSettingsTest {
     private fun settings(
@@ -51,9 +51,10 @@ class KafkaConsumerSettingsTest {
         ],
     )
     fun `adapter-owned keys in additionalProperties are rejected and named`(key: String) {
-        val error = assertThrows<IllegalArgumentException> {
-            settings(additionalProperties = mapOf(key to "x"))
-        }
+        val error =
+            assertThrows<IllegalArgumentException> {
+                settings(additionalProperties = mapOf(key to "x"))
+            }
         assertTrue(error.message!!.contains(key), "message should name '$key' but was: ${error.message}")
     }
 
@@ -85,12 +86,13 @@ class KafkaConsumerSettingsTest {
 
     @Test
     fun `typed settings are written to the configuration`() {
-        val properties = KafkaConsumerSettings(
-            bootstrapServers = "broker:9092",
-            groupId = "g",
-            clientId = "metamorph-1",
-            maxPollRecords = 50,
-        ).toProperties()
+        val properties =
+            KafkaConsumerSettings(
+                bootstrapServers = "broker:9092",
+                groupId = "g",
+                clientId = "metamorph-1",
+                maxPollRecords = 50,
+            ).toProperties()
 
         assertEquals("broker:9092", properties["bootstrap.servers"])
         assertEquals("g", properties["group.id"])

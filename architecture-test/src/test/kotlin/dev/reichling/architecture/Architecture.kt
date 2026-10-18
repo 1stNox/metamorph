@@ -17,7 +17,10 @@ object Architecture {
     const val PORT_PACKAGE = "dev.reichling.core.port"
     const val ADAPTER_PACKAGE = "dev.reichling.adapter"
 
-    class LayerSpec(val name: String, val basePackage: String) {
+    class LayerSpec(
+        val name: String,
+        val basePackage: String,
+    ) {
         /** The same layer in Konsist's own terms (`..` matches the package and all subpackages). */
         val konsist = Layer(name, "$basePackage..")
 
@@ -36,20 +39,22 @@ object Architecture {
      * Which layers each layer may depend on. Anything not listed is forbidden, so nothing may
      * depend on App (it appears in no other layer's set) and Model depends on nothing.
      */
-    val allowedDependencies: Map<LayerSpec, Set<LayerSpec>> = mapOf(
-        model to emptySet(),
-        port to setOf(model),
-        adapter to setOf(port, model),
-        app to setOf(model, port, adapter),
-    )
+    val allowedDependencies: Map<LayerSpec, Set<LayerSpec>> =
+        mapOf(
+            model to emptySet(),
+            port to setOf(model),
+            adapter to setOf(port, model),
+            app to setOf(model, port, adapter),
+        )
 
     /**
      * For every adapter package: the package prefixes of the platform it adapts. A new adapter must
      * be registered here, otherwise [PlatformFreeAdapterApiTest] fails.
      */
-    val adapterPlatforms: Map<String, List<String>> = mapOf(
-        "dev.reichling.adapter.kafka" to listOf("org.apache.kafka"),
-    )
+    val adapterPlatforms: Map<String, List<String>> =
+        mapOf(
+            "dev.reichling.adapter.kafka" to listOf("org.apache.kafka"),
+        )
 
     /**
      * Production sources of every module (test sources excluded), found without per-module wiring.
@@ -72,7 +77,10 @@ fun String?.isIn(base: String): Boolean = this != null && (this == base || start
 fun String.isUnder(prefix: String): Boolean = isIn(prefix)
 
 /** Fails with [rule] and one line per violation, so the message says which rule broke and where. */
-fun assertNoViolations(rule: String, violations: List<String>) {
+fun assertNoViolations(
+    rule: String,
+    violations: List<String>,
+) {
     assertTrue(violations.isEmpty()) {
         "$rule\n" + violations.joinToString(separator = "\n") { "  - $it" }
     }

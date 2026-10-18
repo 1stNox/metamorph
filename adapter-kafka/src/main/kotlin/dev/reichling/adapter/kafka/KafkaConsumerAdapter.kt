@@ -4,9 +4,6 @@ import dev.reichling.core.model.StreamRecord
 import dev.reichling.core.port.CommitRejectedException
 import dev.reichling.core.port.EventStreamConsumer
 import dev.reichling.core.port.EventStreamException
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.toJavaDuration
 import org.apache.kafka.clients.consumer.CloseOptions
 import org.apache.kafka.clients.consumer.CommitFailedException
 import org.apache.kafka.clients.consumer.Consumer
@@ -16,6 +13,9 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata
 import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.TopicPartition
 import org.apache.kafka.common.errors.RebalanceInProgressException
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 /**
  * [EventStreamConsumer] on top of a Kafka consumer (the adapted service).
@@ -31,7 +31,6 @@ class KafkaConsumerAdapter internal constructor(
     private val consumer: Consumer<ByteArray, ByteArray>,
     private val closeTimeout: Duration = 10.seconds,
 ) : EventStreamConsumer {
-
     /** Creates an adapter with a new Kafka consumer configured from [settings]. */
     constructor(settings: KafkaConsumerSettings) : this(createConsumer(settings))
 
@@ -41,17 +40,18 @@ class KafkaConsumerAdapter internal constructor(
     private var subscribed = false
     private var closed = false
 
-    private val rebalanceListener = object : ConsumerRebalanceListener {
-        override fun onPartitionsAssigned(partitions: Collection<TopicPartition>) = Unit
+    private val rebalanceListener =
+        object : ConsumerRebalanceListener {
+            override fun onPartitionsAssigned(partitions: Collection<TopicPartition>) = Unit
 
-        override fun onPartitionsRevoked(partitions: Collection<TopicPartition>) {
-            pending.keys.removeAll(partitions.toSet())
-        }
+            override fun onPartitionsRevoked(partitions: Collection<TopicPartition>) {
+                pending.keys.removeAll(partitions.toSet())
+            }
 
-        override fun onPartitionsLost(partitions: Collection<TopicPartition>) {
-            pending.keys.removeAll(partitions.toSet())
+            override fun onPartitionsLost(partitions: Collection<TopicPartition>) {
+                pending.keys.removeAll(partitions.toSet())
+            }
         }
-    }
 
     override fun subscribe(streams: Set<String>) {
         checkNotClosed()

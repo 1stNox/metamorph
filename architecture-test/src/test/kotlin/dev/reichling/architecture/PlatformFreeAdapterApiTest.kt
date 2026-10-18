@@ -1,10 +1,10 @@
 package dev.reichling.architecture
 
+import com.lemonappdev.konsist.api.declaration.KoClassDeclaration
 import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.declaration.KoFunctionDeclaration
-import com.lemonappdev.konsist.api.declaration.KoPropertyDeclaration
-import com.lemonappdev.konsist.api.declaration.KoClassDeclaration
 import com.lemonappdev.konsist.api.declaration.KoParameterDeclaration
+import com.lemonappdev.konsist.api.declaration.KoPropertyDeclaration
 import com.lemonappdev.konsist.api.declaration.combined.KoClassAndInterfaceAndObjectDeclaration
 import com.lemonappdev.konsist.api.provider.modifier.KoVisibilityModifierProvider
 import org.junit.jupiter.api.Test
@@ -22,16 +22,19 @@ class PlatformFreeAdapterApiTest {
 
     @Test
     fun `every adapter package is registered with its platform prefixes`() {
-        val adapterPackages = Architecture.filesIn(Architecture.adapter)
-            .map { adapterPackageOf(it.packagee?.name.orEmpty()) }
-            .toSortedSet()
+        val adapterPackages =
+            Architecture
+                .filesIn(Architecture.adapter)
+                .map { adapterPackageOf(it.packagee?.name.orEmpty()) }
+                .toSortedSet()
 
-        val violations = adapterPackages
-            .filter { it !in Architecture.adapterPlatforms }
-            .map {
-                "Adapter package '$it' has sources but is not registered in Architecture.adapterPlatforms " +
-                    "(add it with the package prefixes of its platform)"
-            }
+        val violations =
+            adapterPackages
+                .filter { it !in Architecture.adapterPlatforms }
+                .map {
+                    "Adapter package '$it' has sources but is not registered in Architecture.adapterPlatforms " +
+                        "(add it with the package prefixes of its platform)"
+                }
 
         assertNoViolations(
             "Every adapter package must be registered so its public API can be checked for platform types.",
@@ -41,9 +44,10 @@ class PlatformFreeAdapterApiTest {
 
     @Test
     fun `adapter public API exposes no platform types`() {
-        val violations = Architecture.adapterPlatforms.flatMap { (adapterPackage, prefixes) ->
-            Architecture.filesIn(adapterPackage).flatMap { file -> exposedPlatformTypes(file, prefixes) }
-        }
+        val violations =
+            Architecture.adapterPlatforms.flatMap { (adapterPackage, prefixes) ->
+                Architecture.filesIn(adapterPackage).flatMap { file -> exposedPlatformTypes(file, prefixes) }
+            }
 
         assertNoViolations(
             "Public and default-visibility declarations of an adapter must not use the platform's types in " +
@@ -61,29 +65,67 @@ class PlatformFreeAdapterApiTest {
         !declaration.hasInternalModifier && !declaration.hasPrivateModifier
 
     /** Descriptions of exposed declarations in [file] that mention a type from one of [prefixes]. */
-    private fun exposedPlatformTypes(file: KoFileDeclaration, prefixes: List<String>): List<String> {
-        val importedPlatformNames = file.imports
-            .filter { import -> !import.isWildcard && prefixes.any { import.name.isUnder(it) } }
-            .map { it.alias?.name ?: it.name.substringAfterLast('.') }
-            .toSet()
+    private fun exposedPlatformTypes(
+        file: KoFileDeclaration,
+        prefixes: List<String>,
+    ): List<String> = ExposedTypeCollector(file, prefixes).collect()
 
-        fun mentionsPlatform(typeText: String): Boolean = identifier.findAll(typeText).any { match ->
-            val name = match.value
-            prefixes.any { name.isUnder(it) } || name.substringBefore('.') in importedPlatformNames
+    /** Walks the declarations of one [file] and records those that expose a type from one of [prefixes]. */
+    private inner class ExposedTypeCollector(
+        private val file: KoFileDeclaration,
+        private val prefixes: List<String>,
+    ) {
+        private val found = mutableListOf<String>()
+
+        private val importedPlatformNames =
+            file.imports
+                .filter { import -> !import.isWildcard && prefixes.any { import.name.isUnder(it) } }
+                .map { it.alias?.name ?: it.name.substringAfterLast('.') }
+                .toSet()
+
+        fun collect(): List<String> {
+            file.functions(includeNested = false).forEach { checkFunction("", it) }
+            file.properties(includeNested = false).forEach { checkProperty("", it) }
+            file.classesAndInterfacesAndObjects(includeNested = false).forEach { checkDeclaration("", it) }
+
+            val hasExposedDeclarations =
+                file.declarations(includeNested = true).any {
+                    it is KoVisibilityModifierProvider && isExposed(it)
+                }
+            if (hasExposedDeclarations &&
+                file.imports.any { it.isWildcard && prefixes.any { p -> it.name.isUnder(p) } }
+            ) {
+                found +=
+                    where("wildcard import of a platform package; use explicit imports so the API check can see them")
+            }
+            return found
         }
 
-        fun where(description: String) = "${file.path}: $description"
-        val found = mutableListOf<String>()
+        private fun mentionsPlatform(typeText: String): Boolean =
+            identifier.findAll(typeText).any { match ->
+                val name = match.value
+                prefixes.any { name.isUnder(it) } || name.substringBefore('.') in importedPlatformNames
+            }
 
-        fun checkParameters(owner: String, parameters: List<KoParameterDeclaration>) {
-            parameters.filter { mentionsPlatform(it.type.text) }
+        private fun where(description: String) = "${file.path}: $description"
+
+        private fun checkParameters(
+            owner: String,
+            parameters: List<KoParameterDeclaration>,
+        ) {
+            parameters
+                .filter { mentionsPlatform(it.type.text) }
                 .forEach { found += where("$owner has parameter '${it.name}' of platform type ${it.type.text}") }
         }
 
-        fun checkFunction(owner: String, function: KoFunctionDeclaration) {
+        private fun checkFunction(
+            owner: String,
+            function: KoFunctionDeclaration,
+        ) {
             if (!isExposed(function)) return
             val name = "$owner${function.name}()"
-            function.receiverType?.takeIf { mentionsPlatform(it.text) }
+            function.receiverType
+                ?.takeIf { mentionsPlatform(it.text) }
                 ?.let { found += where("$name has platform receiver type ${it.text}") }
             checkParameters(name, function.parameters)
             val returnType = function.returnType
@@ -94,7 +136,10 @@ class PlatformFreeAdapterApiTest {
             }
         }
 
-        fun checkProperty(owner: String, property: KoPropertyDeclaration) {
+        private fun checkProperty(
+            owner: String,
+            property: KoPropertyDeclaration,
+        ) {
             if (!isExposed(property)) return
             val typeText = property.type?.text ?: property.text
             if (mentionsPlatform(typeText)) {
@@ -102,32 +147,27 @@ class PlatformFreeAdapterApiTest {
             }
         }
 
-        fun checkDeclaration(owner: String, declaration: KoClassAndInterfaceAndObjectDeclaration) {
+        private fun checkDeclaration(
+            owner: String,
+            declaration: KoClassAndInterfaceAndObjectDeclaration,
+        ) {
             if (!isExposed(declaration)) return
             val name = "$owner${declaration.name}"
-            declaration.parents().filter { mentionsPlatform(it.text) }
+            declaration
+                .parents()
+                .filter { mentionsPlatform(it.text) }
                 .forEach { found += where("$name has platform supertype ${it.text}") }
             if (declaration is KoClassDeclaration) {
-                declaration.primaryConstructor?.takeIf { isExposed(it) }
+                declaration.primaryConstructor
+                    ?.takeIf { isExposed(it) }
                     ?.let { checkParameters("$name constructor", it.parameters) }
-                declaration.secondaryConstructors.filter { isExposed(it) }
+                declaration.secondaryConstructors
+                    .filter { isExposed(it) }
                     .forEach { checkParameters("$name constructor", it.parameters) }
             }
             declaration.functions(includeNested = false).forEach { checkFunction("$name.", it) }
             declaration.properties(includeNested = false).forEach { checkProperty("$name.", it) }
             declaration.classesAndInterfacesAndObjects(includeNested = false).forEach { checkDeclaration("$name.", it) }
         }
-
-        file.functions(includeNested = false).forEach { checkFunction("", it) }
-        file.properties(includeNested = false).forEach { checkProperty("", it) }
-        file.classesAndInterfacesAndObjects(includeNested = false).forEach { checkDeclaration("", it) }
-
-        val hasExposedDeclarations = file.declarations(includeNested = true).any {
-            it is KoVisibilityModifierProvider && isExposed(it)
-        }
-        if (hasExposedDeclarations && file.imports.any { it.isWildcard && prefixes.any { p -> it.name.isUnder(p) } }) {
-            found += where("wildcard import of a platform package; use explicit imports so the API check can see them")
-        }
-        return found
     }
 }

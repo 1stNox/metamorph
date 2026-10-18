@@ -7,11 +7,12 @@ class CorePurityTest {
 
     @Test
     fun `core imports only from kotlin, java and core`() {
-        val violations = Architecture.filesIn(Architecture.CORE_PACKAGE).flatMap { file ->
-            file.imports
-                .filter { import -> allowedPrefixes.none { import.name.isUnder(it) } }
-                .map { import -> "${file.path}: imports ${import.name}" }
-        }
+        val violations =
+            Architecture.filesIn(Architecture.CORE_PACKAGE).flatMap { file ->
+                file.imports
+                    .filter { import -> allowedPrefixes.none { import.name.isUnder(it) } }
+                    .map { import -> "${file.path}: imports ${import.name}" }
+            }
 
         assertNoViolations(
             "Files in ${Architecture.CORE_PACKAGE}.. may import only from " +

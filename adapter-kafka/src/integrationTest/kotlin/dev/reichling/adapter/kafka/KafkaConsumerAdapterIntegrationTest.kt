@@ -1,14 +1,13 @@
 package dev.reichling.adapter.kafka
 
 import dev.reichling.core.model.RecordOrigin
-import kotlin.time.Duration.Companion.milliseconds
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.time.Duration.Companion.milliseconds
 
 /** Runs the adapter against a real broker. Each test uses its own topics and consumer group. */
 class KafkaConsumerAdapterIntegrationTest {
-
     @Test
     fun `maps key, value, header and origin from a real broker`() {
         val topic = KafkaTestBroker.uniqueName("orders")
@@ -24,7 +23,13 @@ class KafkaConsumerAdapterIntegrationTest {
             assertEquals("k1", record.key!!.decodeToString())
             assertEquals("v1", record.value!!.decodeToString())
             assertEquals(listOf("source"), record.headers.map { it.key })
-            assertEquals("test", record.headers.single().value!!.decodeToString())
+            assertEquals(
+                "test",
+                record.headers
+                    .single()
+                    .value!!
+                    .decodeToString(),
+            )
             assertEquals(RecordOrigin(topic, partition = 2, offset = 0), record.origin)
         }
     }

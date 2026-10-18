@@ -2,8 +2,8 @@ package dev.reichling.adapter.kafka
 
 import dev.reichling.core.model.RecordOrigin
 import dev.reichling.core.model.StreamRecord
-import java.time.Instant
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import java.time.Instant
 
 /**
  * Maps a Kafka record to the platform-neutral model. Null key and value stay null, and headers
