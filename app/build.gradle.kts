@@ -12,6 +12,7 @@ plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     application
 
+    jacoco
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
@@ -46,6 +47,18 @@ application {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    reports {
+        xml.required = true
+    }
 }
 
 ktlint {
